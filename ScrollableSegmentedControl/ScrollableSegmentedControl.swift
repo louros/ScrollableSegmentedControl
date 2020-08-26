@@ -38,6 +38,13 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
         }
     }
     
+    public var separatorEnabled: Bool = true {
+        didSet {
+            if oldValue != separatorEnabled {
+                setNeedsLayout()
+            }
+        }
+    }
     
     @objc public var segmentStyle:ScrollableSegmentedControlSegmentStyle = .textOnly {
         didSet {
@@ -95,17 +102,6 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
         set {
             _segmentContentColor = newValue
             reloadSegments()
-        }
-    }
-
-    fileprivate var _underlineHeight: CGFloat = 4.0
-    @objc public dynamic var underlineHeight: CGFloat {
-        get { return _underlineHeight }
-        set {
-            if newValue != _underlineHeight {
-                _underlineHeight = newValue
-                reloadSegments()
-            }
         }
     }
     
@@ -481,7 +477,7 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
                 
                 segmentCell = cell
             }
-            segmentCell.underlineHeight = segmentedControl.underlineHeight
+            
             segmentCell.showUnderline = segmentedControl.underlineSelected
             if segmentedControl.underlineSelected {
                 segmentCell.tintColor = segmentedControl.tintColor
@@ -494,6 +490,10 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
             segmentCell.normalAttributedTitle = data.normalAttributedTitle
             segmentCell.highlightedAttributedTitle = data.highlightedAttributedTitle
             segmentCell.selectedAttributedTitle = data.selectedAttributedTitle
+            
+            if segmentedControl.separatorEnabled, indexPath.item < segmentedControl.segmentsData.count - 1 {
+                segmentCell.showSeparator = true
+            }
             
             return segmentCell
         }
@@ -543,13 +543,7 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
         static let defaultTextColor = UIColor.darkGray
         
         var underlineView:UIView?
-        var underlineHeight: CGFloat = 4.0 {
-            didSet {
-                if oldValue != underlineHeight {
-                    setNeedsUpdateConstraints()
-                }
-            }
-        }
+        var separatorView: UIView?
         public var contentColor:UIColor?
         public var selectedContentColor:UIColor?
         
@@ -576,6 +570,20 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
             }
         }
         
+        var showSeparator: Bool = false {
+            didSet {
+                if oldValue != showSeparator {
+                    separatorView?.removeFromSuperview()
+                }else {
+                    separatorView = UIView(frame: CGRect(x: contentView.frame.width - 1, y: contentView.frame.origin.y, width: 1, height: 16))
+                    separatorView!.backgroundColor = UIColor(red: 1, green: 1, blue: 1, alpha: 0.5)
+                    contentView.addSubview(separatorView!)
+                }
+                
+                configureConstraints()
+            }
+        }
+        
         override var tintColor: UIColor!{
             didSet{
                 underlineView?.backgroundColor = tintColor
@@ -599,9 +607,18 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
         private func configureConstraints() {
             if let underline = underlineView {
                 underline.translatesAutoresizingMaskIntoConstraints = false
+                underline.heightAnchor.constraint(equalToConstant: 4.0).isActive = true
                 underline.leadingAnchor.constraint(equalTo: contentView.leadingAnchor).isActive = true
                 underline.trailingAnchor.constraint(equalTo: contentView.trailingAnchor).isActive = true
                 underline.bottomAnchor.constraint(equalTo: contentView.bottomAnchor).isActive = true
+            }
+            
+            if let separator = separatorView {
+                separator.translatesAutoresizingMaskIntoConstraints = false
+                separator.widthAnchor.constraint(equalToConstant: 2.0).isActive = true
+                separator.heightAnchor.constraint(equalToConstant: 16.0).isActive = true
+                separator.trailingAnchor.constraint(equalTo: contentView.trailingAnchor).isActive = true
+                separator.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
             }
         }
         
@@ -685,10 +702,7 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
             variableConstraints.append(titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor))
             variableConstraints.append(titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: BaseSegmentCollectionViewCell.textPadding))
             variableConstraints.append(titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -BaseSegmentCollectionViewCell.textPadding))
-
-            if let underline = underlineView {
-                variableConstraints.append(underline.heightAnchor.constraint(equalToConstant: underlineHeight))
-            }
+            
             NSLayoutConstraint.activate(variableConstraints)
         }
     }
@@ -739,10 +753,6 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
             variableConstraints.append(imageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor))
             variableConstraints.append(imageView.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: BaseSegmentCollectionViewCell.textPadding))
             variableConstraints.append(contentView.trailingAnchor.constraint(greaterThanOrEqualTo: imageView.trailingAnchor, constant: BaseSegmentCollectionViewCell.textPadding))
-            
-            if let underline = underlineView {
-                variableConstraints.append(underline.heightAnchor.constraint(equalToConstant: underlineHeight))
-            }
             
             NSLayoutConstraint.activate(variableConstraints)
         }
@@ -829,10 +839,6 @@ public enum ScrollableSegmentedControlSegmentStyle: Int {
             variableConstraints.append(stackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor))
             variableConstraints.append(stackView.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: BaseSegmentCollectionViewCell.textPadding))
             variableConstraints.append(contentView.trailingAnchor.constraint(greaterThanOrEqualTo: stackView.trailingAnchor, constant: BaseSegmentCollectionViewCell.textPadding))
-            
-            if let underline = underlineView {
-                variableConstraints.append(underline.heightAnchor.constraint(equalToConstant: underlineHeight))
-            }
             
             NSLayoutConstraint.activate(variableConstraints)
         }
